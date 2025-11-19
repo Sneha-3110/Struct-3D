@@ -3,11 +3,14 @@ import LandingPage from './pages/LandingPage'; // Import new page
 import LinkedList from './components/dsa/LinkedList/LinkedList';
 import BinarySearchTree from './components/dsa/BinaryTree/BinarySearchTree';
 import Dashboard from './pages/Dashboard';  // Import Dashboard page
+
+import { Toaster } from 'react-hot-toast';
 import './App.css';
 
 function App() {
   return (
     <main>
+      <Toaster position="top-center" reverseOrder={false} />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
