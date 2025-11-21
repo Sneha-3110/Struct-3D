@@ -1,52 +1,49 @@
-import React, { useState } from "react";
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Text, Line } from "@react-three/drei";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, Text, Line, Shadow } from '@react-three/drei';
+import { useBstStore } from '../../../context/bstStore';
 
-// 🌐 3D Node Component
+// --- 3D COMPONENTS ---
 const Node = ({ position, value, highlight }) => (
-  <>
-    <mesh position={position} castShadow receiveShadow>
+  <group position={position}>
+    <mesh castShadow receiveShadow>
       <sphereGeometry args={[0.4, 32, 32]} />
-      <meshStandardMaterial
-        color={highlight ? "red" : "skyblue"}
-        roughness={0.3}
+      <meshPhysicalMaterial
+        color={highlight ? "#ff4757" : "#2ed573"} // Red if active, Green otherwise
+        roughness={0.1}
         metalness={0.1}
+        clearcoat={0.8}
       />
     </mesh>
-    <Text
-      position={[position[0], position[1] + 0.6, position[2]]}
-      fontSize={0.3}
-      color="black"
-      anchorX="center"
-      anchorY="middle"
-    >
+    <Text position={[0, 0.6, 0]} fontSize={0.3} color="black" anchorX="center" anchorY="middle">
       {value}
     </Text>
-  </>
+    {/* Shadow for depth */}
+    <Shadow color="black" opacity={0.3} scale={[1, 1, 1]} position={[0, -0.5, 0]} rotation={[-Math.PI/2, 0, 0]} />
+  </group>
 );
 
-// ➰ Edge Component
 const Edge = ({ start, end }) => (
-  <Line points={[start, end]} color="gray" lineWidth={2} />
+  <Line points={[start, end]} color="#555" lineWidth={2} />
 );
 
-// 🌲 Tree Node Class
-class TreeNode {
-  constructor(value, position) {
-    this.value = value;
-    this.position = position;
-    this.left = null;
-    this.right = null;
-  }
-}
+const ComparisonText3D = ({ text, position }) => {
+  if (!text || !position) return null;
+  return (
+    <Text position={[position[0], position[1] + 1.2, position[2]]} fontSize={0.4} color="#333" anchorX="center" anchorY="middle" outlineWidth={0.02} outlineColor="white">
+      {text}
+    </Text>
+  );
+};
 
-// 🔍 Traverse and Generate Nodes & Edges
+// Helper to flatten the tree into renderable arrays
 const traverseAndRender = (node, edges = [], parent = null, nodes = [], highlightNode = null) => {
   if (!node) return { nodes, edges };
 
   nodes.push(
     <Node
-      key={node.value}
+      key={node.id || node.value}
       position={node.position}
       value={node.value}
       highlight={highlightNode?.value === node.value}
@@ -61,439 +58,155 @@ const traverseAndRender = (node, edges = [], parent = null, nodes = [], highligh
 
   traverseAndRender(node.left, edges, node, nodes, highlightNode);
   traverseAndRender(node.right, edges, node, nodes, highlightNode);
-
   return { nodes, edges };
 };
 
-// 💬 3D Comparison Text
-const ComparisonText3D = ({ text, position }) => {
-  if (!text || !position) return null;
-  const [x, y, z] = position;
-  return (
-    <Text
-      position={[x, y + 1.2, z]}
-      fontSize={0.4}
-      color="black"
-      anchorX="center"
-      anchorY="middle"
-    >
-      {text}
-    </Text>
-  );
+// --- ALGORITHM DICTIONARY (For Right Panel) ---
+const algoDictionary = {
+    default: {
+      title: "Binary Search Tree",
+      desc: "A hierarchical data structure where each node has at most two children. The left child is smaller than the parent, and the right child is greater.",
+      code: "Select an operation to see logic."
+    },
+    insert: {
+      title: "Algorithm: Insertion",
+      desc: "Places a new node in the correct position to maintain BST property.",
+      code: `1. Start at Root.
+2. If Value < Current, go Left.
+3. If Value > Current, go Right.
+4. If NULL, insert Node here.`
+    },
+    search: {
+      title: "Algorithm: Search",
+      desc: "Finds if a value exists in O(h) time.",
+      code: `1. Compare Value with Root.
+2. If Equal, Found!
+3. If Value < Root, recurse Left.
+4. If Value > Root, recurse Right.`
+    },
+    traversal: {
+        title: "Algorithm: Traversal",
+        desc: "Visiting all nodes in a specific order.",
+        code: `Inorder: Left -> Root -> Right
+Preorder: Root -> Left -> Right
+Postorder: Left -> Right -> Root`
+    }
+};
+
+const styles = {
+    container: { display: 'flex', width: '100vw', height: '100vh', background: '#f0f2f5', fontFamily: '"Segoe UI", sans-serif', overflow: 'hidden' },
+    taskbar: { width: '60px', background: '#2c3e50', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '20px', zIndex: 20, flexShrink: 0 },
+    taskbarIcon: { width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(255,255,255,0.1)', color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '15px', cursor: 'pointer', fontSize: '1.2rem' },
+    workingArea: { flex: 1, minWidth: 0, position: 'relative', background: '#dbeafe', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.05)' },
+    rightPanel: { width: '350px', display: 'flex', flexDirection: 'column', borderLeft: '1px solid #ccc', zIndex: 20, background: 'white', flexShrink: 0 },
+    descriptionSection: { flex: '0 0 40%', background: '#fff9c4', padding: '20px', borderBottom: '1px solid #ddd', overflowY: 'auto' },
+    operationsSection: { flex: 1, background: '#ffecb3', padding: '20px', overflowY: 'auto' },
+    heading: { marginTop: 0, color: '#333', borderBottom: '2px solid #333', display: 'inline-block', marginBottom: '10px' },
+    inputGroup: { marginBottom: '15px', background: 'rgba(255,255,255,0.5)', padding: '10px', borderRadius: '8px' },
+    input: { width: '100%', padding: '8px', marginBottom: '8px', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' },
+    button: { padding: '8px', border: 'none', borderRadius: '4px', cursor: 'pointer', background: '#007bff', color: 'white', fontWeight: 'bold', width: '100%', marginBottom: '5px' },
+    codeBlock: { display: 'block', background: '#eee', padding: '10px', fontSize: '0.85rem', borderRadius: '4px', fontFamily: 'monospace', whiteSpace: 'pre-wrap', border: '1px solid #ddd' }
 };
 
 const BinarySearchTree = () => {
-  const [values, setValues] = useState([]);
-  const [root, setRoot] = useState(null);
-  const [highlightNode, setHighlightNode] = useState(null);
-  const [comparisonText, setComparisonText] = useState("");
-  const [comparisonPos, setComparisonPos] = useState(null);
-  const [inserting, setInserting] = useState(false);
+  const navigate = useNavigate();
+  const [inputVal, setInputVal] = useState('');
+  const [currentAlgo, setCurrentAlgo] = useState(algoDictionary.default);
 
-  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  // Store Hooks
+  const { root, highlightNode, comparisonText, comparisonPos, isAnimating, traversalResult, insert, deleteNode, search, startTraversal, resetTree } = useBstStore();
 
-  // 🔁 Insertion with animation
-  const insertWithAnimation = async (value) => {
-    setInserting(true);
+  // Generate 3D Objects
+  const { nodes: renderedNodes, edges: renderedEdges } = traverseAndRender(root, [], null, [], highlightNode);
 
-    const insertRecursively = async (node, depth = 0, x = 0, y = 0, z = 0, offset = 4) => {
-      if (!node) {
-        setHighlightNode(null);
-        setComparisonText("");
-        return new TreeNode(value, [x, y, z]);
-      }
-
-      setHighlightNode(node);
-      setComparisonPos(node.position);
-
-      setComparisonText(`${value} < ${node.value}`);
-      await sleep(1000);
-
-      if (value < node.value) {
-        setComparisonText(`${value} < ${node.value} ✅`);
-        await sleep(1000);
-        const newX = x - offset / (depth + 1);
-        const newY = y - 2;
-        node.left = await insertRecursively(node.left, depth + 1, newX, newY, z, offset);
-      } else {
-        setComparisonText(`${value} < ${node.value} ❌`);
-        await sleep(1000);
-        setComparisonText(`${value} > ${node.value}`);
-        await sleep(1000);
-        setComparisonText(`${value} > ${node.value} ✅`);
-        await sleep(1000);
-        const newX = x + offset / (depth + 1);
-        const newY = y - 2;
-        node.right = await insertRecursively(node.right, depth + 1, newX, newY, z, offset);
-      }
-
-      return node;
-    };
-
-    const updatedRoot = await insertRecursively(root);
-    setRoot(updatedRoot);
-    setHighlightNode(null);
-    setComparisonText("");
-    setComparisonPos(null);
-    setValues((prev) => [...prev, value]);
-    setInserting(false);
-  };
-
-  const handleInsert = () => {
-    const input = document.getElementById("nodeInput").value;
-    const num = parseInt(input);
-    if (!isNaN(num) && !values.includes(num) && !inserting) {
-      insertWithAnimation(num);
-      document.getElementById("nodeInput").value = "";
-    }
-  };
-
-  // 🧹 Deletion with animation
-  const deleteNodeWithAnimation = async (valueToDelete) => {
-    setInserting(true);
-
-    const deleteRecursively = async (node, targetValue) => {
-      if (!node) {
-        setComparisonText("Node not found");
-        await sleep(1000);
-        return null;
-      }
-    
-      setHighlightNode(node);
-      setComparisonPos(node.position);
-    
-      if (targetValue < node.value) {
-        setComparisonText(`${targetValue} < ${node.value} ✅`);
-        await sleep(1000);
-        node.left = await deleteRecursively(node.left, targetValue);
-      } else if (targetValue > node.value) {
-        setComparisonText(`${targetValue} > ${node.value} ✅`);
-        await sleep(1000);
-        node.right = await deleteRecursively(node.right, targetValue);
-      } else {
-        setComparisonText(`${targetValue} == ${node.value} ✅ Deleting...`);
-        await sleep(1000);
-    
-        // Case 1: No children
-        if (!node.left && !node.right) {
-          return null;
-        }
-    
-        // Case 2: One child
-        if (!node.left || !node.right) {
-          const child = node.left || node.right;
-          setComparisonText("One child - moving up");
-          await sleep(1000);
-          // Move child to current node's position
-          child.position = [...node.position];
-          return child;
-        }
-    
-        // Case 3: Two children
-        let successorParent = node;
-        let successor = node.right;
-    
-        while (successor.left) {
-          successorParent = successor;
-          successor = successor.left;
-        }
-    
-        setComparisonText(`Replacing with inorder successor: ${successor.value}`);
-        await sleep(1000);
-    
-        // Replace current node's value
-        node.value = successor.value;
-    
-        // Now delete the actual successor node
-        if (successorParent !== node) {
-          successorParent.left = await deleteRecursively(successorParent.left, successor.value);
-        } else {
-          successorParent.right = await deleteRecursively(successorParent.right, successor.value);
-        }
-      }
-    
-      return node;
-    };
-    
-
-    const updatedRoot = await deleteRecursively(root, valueToDelete);
-    setRoot(updatedRoot);
-    setValues((prev) => prev.filter((v) => v !== valueToDelete));
-    setHighlightNode(null);
-    setComparisonText("");
-    setComparisonPos(null);
-    setInserting(false);
-  };
-
-  const result = traverseAndRender(root, [], null, [], highlightNode);
-  const nodes = result.nodes || [];
-  const edges = result.edges || [];
-
-  const searchWithAnimation = async (targetValue) => {
-    if (!root || inserting) return;
-  
-    setInserting(true);
-  
-    const searchRecursively = async (node) => {
-      if (!node) {
-        setComparisonText("Not Found");
-        await sleep(1000);
-        setHighlightNode(null);
-        setComparisonPos(null);
-        return;
-      }
-  
-      setHighlightNode(node);
-      setComparisonPos(node.position);
-      await sleep(1000);
-  
-      if (targetValue === node.value) {
-        setComparisonText(`${targetValue} == ${node.value} ✅ Found`);
-        await sleep(1000);
-        return;
-      }
-  
-      if (targetValue < node.value) {
-        setComparisonText(`${targetValue} < ${node.value} ✅`);
-        await sleep(1000);
-        await searchRecursively(node.left);
-      } else {
-        setComparisonText(`${targetValue} > ${node.value} ✅`);
-        await sleep(1000);
-        await searchRecursively(node.right);
-      }
-    };
-  
-    await searchRecursively(root);
-    setHighlightNode(null);
-    setComparisonText("");
-    setComparisonPos(null);
-    setInserting(false);
-  };
-  
-  const [preorderResult, setPreorderResult] = useState([]);
-
-  const preorderTraversal = async () => {
-    if (!root || inserting) return;
-    setInserting(true);
-    const visited = [];
-  
-    const traverse = async (node) => {
-      if (!node) return;
-  
-      setHighlightNode(node);
-      setComparisonPos(node.position);
-      setComparisonText(`Visit: ${node.value}`);
-      visited.push(node.value);
-      await sleep(1000);
-  
-      await traverse(node.left);
-      await traverse(node.right);
-    };
-  
-    await traverse(root);
-    setComparisonText("Traversal Complete");
-    setPreorderResult(visited); // ← Set result to show below tree
-    await sleep(1000);
-    setHighlightNode(null);
-    setComparisonText("");
-    setComparisonPos(null);
-    setInserting(false);
-  };
-  
-  const [postorderResult, setPostorderResult] = useState([]);
-
-  const postorderTraversal = async () => {
-    if (!root || inserting) return;
-    setInserting(true);
-    const visited = [];
-  
-    const traverse = async (node) => {
-      if (!node) return;
-
-      await traverse(node.left);
-      await traverse(node.right);
-      await sleep(1000);
-      setHighlightNode(node);
-      setComparisonPos(node.position);
-      setComparisonText(`Visit: ${node.value}`);
-      visited.push(node.value);
-      
-    };
-  
-    await traverse(root);
-    setComparisonText("Traversal Complete");
-    setPostorderResult(visited); // ← Set result to show below tree
-    await sleep(1000);
-    setHighlightNode(null);
-    setComparisonText("");
-    setComparisonPos(null);
-    setInserting(false);
-  };
-
-  const [inorderResult, setInorderResult] = useState([]);
-  const inorderTraversal = async () => {
-    if (!root || inserting) return;
-    setInserting(true);
-    const visited = [];
-  
-    const traverse = async (node) => {
-      if (!node) return;
-
-      await traverse(node.left);
-      
-      await sleep(1000);
-      setHighlightNode(node);
-      setComparisonPos(node.position);
-      setComparisonText(`Visit: ${node.value}`);
-      visited.push(node.value);
-      await sleep(1000);
-      await traverse(node.right);
-      
-    };
-  
-    await traverse(root);
-    setComparisonText("Traversal Complete");
-    setInorderResult(visited); // ← Set result to show below tree
-    await sleep(1000);
-    setHighlightNode(null);
-    setComparisonText("");
-    setComparisonPos(null);
-    setInserting(false);
+  const handleAction = (algoKey, actionFn) => {
+      setCurrentAlgo(algoDictionary[algoKey] || algoDictionary.default);
+      actionFn();
   };
 
   return (
-    <div style={{ height: "100vh", width: "100vw" }}>
-      {/* 💻 UI Panel */}
-      <div
-        style={{
-          position: "absolute",
-          top: 20,
-          left: 20,
-          zIndex: 1,
-          background: "white",
-          // color: white,
-          padding: 12,
-          borderRadius: 8,
-          display: "flex",
-          flexDirection: "column",
-          gap: "10px",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-        }}
-      >
-        <div>
-          <input id="nodeInput" type="number" placeholder="Insert value" />
-          <button onClick={handleInsert} disabled={inserting}>
-            Insert
-          </button>
-        </div>
-        <div>
-          <input id="deleteInput" type="number" placeholder="Delete value" />
-          <button
-            onClick={() => {
-              const val = parseInt(document.getElementById("deleteInput").value);
-              if (!isNaN(val) && values.includes(val) && !inserting) {
-                deleteNodeWithAnimation(val);
-                document.getElementById("deleteInput").value = "";
-              }
-            }}
-            disabled={inserting}
-          >
-            Delete
-          </button>
-        </div>
-        <div>
-          <input id="searchInput" type="number" placeholder="Search value" />
-            <button
-              onClick={() => {
-              const val = parseInt(document.getElementById("searchInput").value);
-              if (!isNaN(val) && !inserting) {
-                searchWithAnimation(val);
-                document.getElementById("searchInput").value = "";
-              }
-            }}
-            disabled={inserting}
-          >
-          Search
-        </button>
+    <div style={styles.container}>
+      
+      {/* 1. LEFT TASKBAR */}
+      <div style={styles.taskbar}>
+        <div style={styles.taskbarIcon} onClick={() => navigate('/dashboard')} title="Dashboard">⬅</div>
+        <div style={styles.taskbarIcon} onClick={() => { resetTree(); setCurrentAlgo(algoDictionary.default); }} title="Reset">↻</div>
       </div>
+
+      {/* 2. MIDDLE WORKING AREA */}
+      <div style={styles.workingArea}>
+        <div style={{ position: 'absolute', top: 20, left: 20, color: '#999', fontWeight: 'bold', fontSize: '2rem', pointerEvents: 'none' }}>BST Playground</div>
+        
+        <Canvas camera={{ position: [0, 2, 15], fov: 50 }} shadows>
+          <ambientLight intensity={0.4} />
+          <spotLight position={[10, 20, 10]} angle={0.3} penumbra={1} castShadow intensity={1} />
+          <OrbitControls />
           
-      <div>
-  <button onClick={preorderTraversal} disabled={inserting}>
-    Preorder Traversal
-  </button>
-  <button onClick={postorderTraversal} disabled={inserting}>
-    Postorder Traversal
-  </button>
-  <button onClick={inorderTraversal} disabled={inserting}>
-    Inorder Traversal
-  </button>
-</div>
+          {/* Render the Tree */}
+          {renderedEdges}
+          {renderedNodes}
+          
+          {/* Floating Text for comparisons */}
+          <ComparisonText3D text={comparisonText} position={comparisonPos} />
+        </Canvas>
 
+        {/* Traversal Result Overlay */}
+        {traversalResult.length > 0 && (
+            <div style={{ position: 'absolute', bottom: 30, left: '50%', transform: 'translateX(-50%)', background: 'rgba(255,255,255,0.9)', padding: '15px 25px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', fontWeight: 'bold', color: '#333' }}>
+                Traversal: {traversalResult.join(" → ")}
+            </div>
+        )}
       </div>
 
-      {/* 🌌 3D Canvas */}
-      <Canvas camera={{ position: [0, 0, 15], fov: 50 }} shadows>
-        <ambientLight intensity={0.3} />
-        <directionalLight position={[5, 10, 5]} intensity={1} castShadow />
-        <pointLight position={[-10, -10, -10]} intensity={0.5} />
-        <OrbitControls />
-        {edges}
-        {nodes}
-        <ComparisonText3D text={comparisonText} position={comparisonPos} />
-      </Canvas>
+      {/* 3. RIGHT PANEL */}
+      <div style={styles.rightPanel}>
+        
+        {/* Description */}
+        <div style={styles.descriptionSection}>
+          <h3 style={styles.heading}>{currentAlgo.title}</h3>
+          <p style={{fontSize: '0.9rem'}}>{currentAlgo.desc}</p>
+          <strong>Logic:</strong>
+          <code style={styles.codeBlock}>{currentAlgo.code}</code>
+        </div>
 
-      {preorderResult.length > 0 && (
-  <div style={{
-    position: "absolute",
-    bottom: 20,
-    left: "50%",
-    transform: "translateX(-50%)",
-    background: "rgba(255, 255, 255, 0.9)",
-    padding: "10px 20px",
-    borderRadius: "8px",
-    fontSize: "1.1rem",
-    fontWeight: "bold",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.2)"
-  }}>
-    Preorder Traversal: {preorderResult.join(" → ")}
-  </div>
-)}
+        {/* Operations */}
+        <div style={styles.operationsSection}>
+          <h3 style={styles.heading}>Controls</h3>
+          
+          <div style={styles.inputGroup}>
+             <input 
+               style={styles.input} 
+               placeholder="Enter Value (e.g. 42)" 
+               value={inputVal} 
+               onChange={(e) => setInputVal(e.target.value)} 
+               type="number"
+             />
+             <button style={styles.button} disabled={isAnimating} onClick={() => handleAction('insert', () => insert(Number(inputVal)))}>
+               Insert Node
+             </button>
+             <button style={{...styles.button, background: '#2ed573'}} disabled={isAnimating} onClick={() => handleAction('search', () => search(Number(inputVal)))}>
+               Search Node
+             </button>
+             <button style={{...styles.button, background: '#ff4757'}} disabled={isAnimating} onClick={() => handleAction('insert', () => deleteNode(Number(inputVal)))}>
+               Delete Node
+             </button>
+          </div>
 
-{postorderResult.length > 0 && (
-  <div style={{
-    position: "absolute",
-    bottom: 20,
-    left: "50%",
-    transform: "translateX(-50%)",
-    background: "rgba(255, 255, 255, 0.9)",
-    padding: "10px 20px",
-    borderRadius: "8px",
-    fontSize: "1.1rem",
-    fontWeight: "bold",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.2)"
-  }}>
-    Postorder Traversal: {postorderResult.join(" → ")}
-  </div>
-)}
+          <div style={styles.inputGroup}>
+             <strong style={{display:'block', marginBottom:'5px'}}>Traversals:</strong>
+             <button style={{...styles.button, background: '#ffa502'}} disabled={isAnimating} onClick={() => handleAction('traversal', () => startTraversal('inorder'))}>
+               Inorder (L-Root-R)
+             </button>
+             <button style={{...styles.button, background: '#ffa502'}} disabled={isAnimating} onClick={() => handleAction('traversal', () => startTraversal('preorder'))}>
+               Preorder (Root-L-R)
+             </button>
+             <button style={{...styles.button, background: '#ffa502'}} disabled={isAnimating} onClick={() => handleAction('traversal', () => startTraversal('postorder'))}>
+               Postorder (L-R-Root)
+             </button>
+          </div>
+        </div>
 
-{inorderResult.length > 0 && (
-  <div style={{
-    position: "absolute",
-    bottom: 20,
-    left: "50%",
-    transform: "translateX(-50%)",
-    background: "rgba(255, 255, 255, 0.9)",
-    padding: "10px 20px",
-    borderRadius: "8px",
-    fontSize: "1.1rem",
-    fontWeight: "bold",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.2)"
-  }}>
-    Inorder Traversal: {inorderResult.join(" → ")}
-  </div>
-)}
-
+      </div>
     </div>
   );
 };

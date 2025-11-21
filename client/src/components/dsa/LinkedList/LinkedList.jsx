@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useDsaStore } from '../../../context/dsaStore';
+import { useDsaStore } from '../../../context/linkedListStore';
 import SceneSetup from '../../canvas/SceneSetup';
 import Node3D from '../Node3D';
 import Pointer3D from '../LinkedList/Pointer3D'; 

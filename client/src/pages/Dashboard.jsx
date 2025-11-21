@@ -7,7 +7,7 @@ const Dashboard = () => {
   // List of topics available in your project
   const topics = [
     {  path: '/data-structure/linked-list', id: 'linked-list', title: 'Linked List', desc: 'Linear collection of data elements.' },
-    {  path: '/data-structure/bst', id: 'bst', title: 'Binary Search Tree', desc: 'Hierarchical tree structure.' },
+    {  path: '/data-structure/binary-tree', id: 'bst', title: 'Binary Tree', desc: 'Hierarchical tree structure.' },
     {  path: '/data-structure/graph', id: 'graph', title: 'Graph Algorithms', desc: 'Nodes connected by edges.' },
     {  path: '/data-structure/sorting', id: 'sorting', title: 'Sorting Visualizer', desc: 'Bubble, Merge, and Quick sort.' },
   ];
