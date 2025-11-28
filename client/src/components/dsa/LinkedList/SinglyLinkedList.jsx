@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useDsaStore } from '../../../context/linkedListStore';
 import SceneSetup from '../../canvas/SceneSetup';
 import Node3D from '../Node3D';
-import Pointer3D from '../LinkedList/Pointer3D'; 
+import Pointer3D from './Pointer3D'; 
 import { useNavigate } from 'react-router-dom';
 
 // --- ALGODICTIONARY ---

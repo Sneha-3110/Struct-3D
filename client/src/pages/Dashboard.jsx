@@ -15,7 +15,15 @@ const Dashboard = () => {
   return (
     <div style={styles.container}>
       <h1 style={styles.header}>Select a Data Structure</h1>
-      
+      <div 
+      style={styles.backButton} 
+      onClick={() => navigate('/')} 
+      title="Back to Landing Page"
+      onMouseEnter={(e) => e.target.style.transform = 'scale(1)'} // distinct hover effect
+      onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+    >
+      ⬅
+    </div>
       <div style={styles.grid}>
         {topics.map((topic) => (
           <div 
@@ -47,6 +55,19 @@ const styles = {
     padding: '50px',
     background: '#f4f4f9',
     fontFamily: 'Arial, sans-serif',
+    position: 'relative',
+  },
+  backButton: {          
+    position: 'absolute',
+    top: '30px',
+    left: '30px',
+    fontSize: '2.5rem',   
+    cursor: 'pointer',
+    color: '#2c3e50',
+    background: 'none',
+    border: 'none',
+    zIndex: 10,         
+    transition: 'transform 0.2s ease',
   },
   header: {
     textAlign: 'center',
