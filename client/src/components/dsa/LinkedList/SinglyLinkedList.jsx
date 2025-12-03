@@ -233,7 +233,7 @@ const LinkedList = () => {
       
       {/* 1. LEFT TASKBAR */}
       <div style={styles.taskbar}>
-        <div style={styles.taskbarIcon} onClick={() => navigate('/dashboard')} title="Back to Dashboard">
+        <div style={styles.taskbarIcon} onClick={() => navigate('/data-structure/linked-list')} title="Linked List">
           ⬅
         </div>
         <div style={styles.taskbarIcon} onClick={() => { resetNodes(); setCurrentAlgo(algoDictionary.default); }} title="Reset">
