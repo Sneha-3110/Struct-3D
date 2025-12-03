@@ -5,23 +5,35 @@ const SortingMenu = () => {
   const navigate = useNavigate();
 
   const sortingOptions = [
-    {
-      id: 'bubble',
-      title: 'Bubble Sort',
+    { 
+      id: 'bubble', 
+      title: 'Bubble Sort', 
       desc: 'Visualize Bubble Sort with 3D bars and user input.',
-      path: '/data-structure/sorting/bubble-sort-3d'
+      path: '/data-structure/sorting/bubble-sort' 
     },
-    {
-      id: 'selection',
-      title: 'Selection Sort',
+    { 
+      id: 'selection', 
+      title: 'Selection Sort', 
       desc: 'Visualize Selection Sort with step-by-step animation.',
-      path: '/data-structure/sorting/selection-sort-3d'
+      path: '/data-structure/sorting/selection-sort' 
+    },
+    { 
+      id: 'insertion', 
+      title: 'Insertion Sort', 
+      desc: 'Visualize Insertion Sort with 3D interactive bars.',
+      path: '/data-structure/sorting/insertion-sort' 
+    },
+    { 
+      id: 'merge',
+      title: 'Merge Sort',
+      desc: 'Visualize Merge Sort with dynamic array representation.',
+      path: '/data-structure/sorting/merge-sort' 
     },
     {
-      id: 'insertion',
-      title: 'Insertion Sort',
-      desc: 'Visualize Insertion Sort with 3D interactive bars.',
-      path: '/data-structure/sorting/insertion-sort-3d'
+      id: 'quick',
+      title: 'Quick Sort',
+      desc: 'Visualize Quick Sort with partitioning and recursive calls.',  
+      path: '/data-structure/sorting/quick-sort' 
     },
   ];
 
@@ -31,12 +43,12 @@ const SortingMenu = () => {
         <button style={styles.backBtn} onClick={() => navigate('/dashboard')}>← Back</button>
         <h1 style={styles.header}>Select Sorting Algorithm</h1>
       </div>
-     
+      
       <div style={styles.grid}>
         {sortingOptions.map((option) => (
-          <div
-            key={option.id}
-            style={styles.card}
+          <div 
+            key={option.id} 
+            style={styles.card} 
             onClick={() => navigate(option.path)}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-5px)';
