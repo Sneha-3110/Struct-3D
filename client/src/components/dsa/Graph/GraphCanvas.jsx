@@ -4,6 +4,7 @@ import { OrbitControls } from '@react-three/drei';
 import { useGraphStore } from '../../../context/graphStore';
 import GraphNode3D from './GraphNode3D';
 import GraphEdge3D from './GraphEdge3D';
+import * as THREE from 'three';
 
 const GraphCanvas = () => {
   const canvasRef = useRef();
@@ -48,16 +49,22 @@ const GraphCanvas = () => {
   };
 
   const handleNodeDragStart = (nodeId) => {
+    console.log('Drag started, disabling camera controls'); // Debug log
     setIsDragging(true);
     if (controlsRef.current) {
       controlsRef.current.enabled = false;
+      // Force update the controls
+      controlsRef.current.update();
     }
   };
 
   const handleNodeDragEnd = (nodeId) => {
+    console.log('Drag ended, enabling camera controls'); // Debug log
     setIsDragging(false);
     if (controlsRef.current) {
       controlsRef.current.enabled = true;
+      // Force update the controls
+      controlsRef.current.update();
     }
   };
 
@@ -74,10 +81,22 @@ const GraphCanvas = () => {
 
   return (
     <group ref={canvasRef}>
+      {/* Add OrbitControls that are properly disabled during dragging */}
       <OrbitControls 
         ref={controlsRef}
-        makeDefault 
         enabled={!isDragging}
+        enablePan={true}
+        enableZoom={true}
+        enableRotate={!isDragging}
+        mouseButtons={{
+          LEFT: !isDragging ? THREE.MOUSE.ROTATE : undefined,
+          MIDDLE: THREE.MOUSE.DOLLY,
+          RIGHT: THREE.MOUSE.PAN
+        }}
+        touches={{
+          ONE: !isDragging ? THREE.TOUCH.ROTATE : undefined,
+          TWO: THREE.TOUCH.DOLLY_PAN
+        }}
       />
       
       <mesh onClick={handleCanvasClick} visible={false} position={[0, 0, -5]}>

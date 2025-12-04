@@ -39,7 +39,10 @@ const GraphNode3D = ({
     // Animation disabled to ensure edges connect properly to nodes
     // Keep nodes at their exact positions for proper edge alignment
     if (groupRef.current) {
-      groupRef.current.scale.setScalar(1); // Keep scale normal
+      // Add subtle scale effect during dragging for visual feedback
+      const targetScale = isDragging ? 1.1 : 1;
+      groupRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
+      
       // Position should remain at node.position exactly
     }
   });
@@ -48,10 +51,19 @@ const GraphNode3D = ({
   const handlePointerDown = (event) => {
     event.stopPropagation();
     event.preventDefault();
+    
+    // Capture the pointer to ensure we get all subsequent events
+    event.target.setPointerCapture(event.pointerId);
+    
     setDragStartTime(Date.now());
     setDragStartPosition({ x: event.clientX, y: event.clientY });
     gl.domElement.style.cursor = 'grabbing';
     
+    // Store initial node position for smoother dragging
+    const initialPos = new THREE.Vector3(...node.position);
+    setDragOffset(initialPos);
+    
+    console.log('Node pointer down, starting drag for node:', node.value); // Debug log
     onDragStart?.(node.id);
   };
 
@@ -70,7 +82,7 @@ const GraphNode3D = ({
       }
       
       if (isDragging) {
-        // Calculate new position in world space
+        // Enhanced world position calculation for more accurate dragging
         const rect = gl.domElement.getBoundingClientRect();
         const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -79,12 +91,20 @@ const GraphNode3D = ({
         const raycaster = new THREE.Raycaster();
         raycaster.setFromCamera({ x, y }, camera);
         
-        // Project onto a plane at the node's current Z position
+        // Project onto a plane at the node's current Z position for consistent movement
         const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -node.position[2]);
         const intersection = new THREE.Vector3();
-        raycaster.ray.intersectPlane(plane, intersection);
         
-        if (intersection) {
+        if (raycaster.ray.intersectPlane(plane, intersection)) {
+          // Apply smooth constraints to keep nodes within reasonable bounds
+          const maxDistance = 15; // Maximum distance from center
+          const distance = intersection.length();
+          
+          if (distance > maxDistance) {
+            intersection.normalize().multiplyScalar(maxDistance);
+          }
+          
+          // Update position with the new calculated position
           onDrag?.(node.id, [intersection.x, intersection.y, node.position[2]]);
         }
       }
@@ -95,11 +115,22 @@ const GraphNode3D = ({
     event.stopPropagation();
     const wasJustClicked = dragStartTime > 0 && !isDragging;
     
+    // Release pointer capture
+    if (event.target.hasPointerCapture && event.target.hasPointerCapture(event.pointerId)) {
+      event.target.releasePointerCapture(event.pointerId);
+    }
+    
     console.log('Pointer up on node:', node.value, 'wasJustClicked:', wasJustClicked); // Debug log
     
+    // Reset drag state
     setIsDragging(false);
     setDragStartTime(0);
-    gl.domElement.style.cursor = 'grab';
+    setDragOffset(null);
+    
+    // Restore cursor with smooth transition
+    gl.domElement.style.cursor = 'default';
+    
+    // Notify that dragging has ended
     onDragEnd?.(node.id);
     
     // If it was a quick click (not a drag), trigger click
@@ -162,6 +193,7 @@ const GraphNode3D = ({
       position={node.position}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
     >
       <group ref={groupRef}>
         {/* Selection ring */}
@@ -181,12 +213,14 @@ const GraphNode3D = ({
           <sphereGeometry args={[0.5, 32, 32]} />
           <meshPhysicalMaterial 
             color={getNodeColor()}
-            roughness={isHovering ? 0.1 : 0.2}
-            metalness={isHovering ? 0.5 : 0.3}
-            clearcoat={1}
-            clearcoatRoughness={0.1}
-            transparent={node.state === 'queued'}
-            opacity={node.state === 'queued' ? 0.7 : 1}
+            roughness={isDragging ? 0.05 : (isHovering ? 0.1 : 0.2)}
+            metalness={isDragging ? 0.7 : (isHovering ? 0.5 : 0.3)}
+            clearcoat={isDragging ? 1.5 : 1}
+            clearcoatRoughness={isDragging ? 0.05 : 0.1}
+            transparent={node.state === 'queued' || isDragging}
+            opacity={node.state === 'queued' ? 0.7 : (isDragging ? 0.9 : 1)}
+            emissive={isDragging ? new THREE.Color(0x002244) : new THREE.Color(0x000000)}
+            emissiveIntensity={isDragging ? 0.1 : 0}
           />
         </mesh>
 

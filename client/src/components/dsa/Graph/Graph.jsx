@@ -500,6 +500,34 @@ const Graph = () => {
         <button 
           style={{
             ...styles.button,
+            ...styles.warningButton,
+            ...(isAnimating || nodes.length === 0 ? styles.disabled : {}),
+            width: '100%',
+            marginBottom: '10px'
+          }}
+          onClick={() => {
+            // Reset all nodes to random positions within a reasonable area
+            nodes.forEach((node, index) => {
+              const angle = (index / nodes.length) * Math.PI * 2;
+              const radius = 3 + Math.random() * 2;
+              const newPosition = [
+                Math.cos(angle) * radius + (Math.random() - 0.5) * 2,
+                Math.sin(angle) * radius + (Math.random() - 0.5) * 2,
+                0
+              ];
+              updateNodePosition(node.id, newPosition);
+            });
+            showOperationMessage('Node positions reset', [0, 0, 0]);
+          }}
+          disabled={isAnimating || nodes.length === 0}
+          title="Redistribute all nodes in a circular pattern with some randomness"
+        >
+          🔄 Reset Positions
+        </button>
+        
+        <button 
+          style={{
+            ...styles.button,
             ...styles.dangerButton,
             ...(isAnimating ? styles.disabled : {}),
             width: '100%'
@@ -521,8 +549,10 @@ const Graph = () => {
           <li><strong>Create Edge:</strong> Click any two nodes in sequence</li>
           <li><strong>Delete Node:</strong> Double-click the node</li>
           <li><strong>Delete Edge:</strong> Click the edge line</li>
-          <li><strong>Move Node:</strong> Drag nodes to reposition</li>
+          <li><strong>Move Node:</strong> Left-click and drag nodes anywhere in 3D space</li>
+          <li><strong>Reset Layout:</strong> Use "Reset Positions" to redistribute nodes</li>
           <li><strong>Graph Type:</strong> Toggle directed/undirected</li>
+          <li><strong>Camera:</strong> Right-click drag to rotate, scroll to zoom</li>
         </ul>
       </div>
     </div>
